@@ -170,17 +170,40 @@ Les services sont définis dans `compose.yaml` :
 - **postgres** : Base de données PostgreSQL (port 5432)
 - **kafka** : Apache Kafka (port 9092)
 
-Pour lancer manuellement les conteneurs :
+### Commandes Docker
 
+**Lancer les conteneurs :**
 ```bash
 docker compose up -d
 ```
 
-Pour arrêter :
-
+**Arrêter les conteneurs :**
 ```bash
 docker compose down
 ```
+
+**Reset complet de la base de données :**
+```bash
+docker compose down -v
+docker compose up -d
+```
+> L'option `-v` supprime les volumes Docker, ce qui efface toutes les données PostgreSQL.
+
+**Voir les logs :**
+```bash
+docker compose logs -f postgres
+```
+
+## Configuration
+
+Le projet est **prêt à l'emploi** sans configuration supplémentaire :
+
+- **Base de données** : Créée automatiquement par Docker Compose
+- **Schéma SQL** : Généré automatiquement par Hibernate (`ddl-auto=update`)
+- **Tables de session** : Créées automatiquement (`initialize-schema=always`)
+- **Conteneurs Docker** : Lancés automatiquement par Spring Boot
+
+Aucun fichier `.env`, aucune variable d'environnement, aucune configuration manuelle requise.
 
 ## Tests
 
