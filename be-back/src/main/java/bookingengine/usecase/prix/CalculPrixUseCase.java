@@ -3,25 +3,23 @@ package bookingengine.usecase.prix;
 import bookingengine.domain.entities.Chambre;
 import bookingengine.domain.entities.Saison;
 import bookingengine.domain.events.PrixCalculatedEvent;
+import bookingengine.domain.exceptions.EntityNotFoundException;
+import bookingengine.domain.ports.EventPublisherPort;
 import bookingengine.domain.repositories.ChambreRepository;
 import bookingengine.domain.repositories.SaisonRepository;
-import bookingengine.domain.exceptions.EntityNotFoundException;
-import bookingengine.frameworks.kafka.EventPublisher;
-import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
-@Service
 public class CalculPrixUseCase {
 
     private final ChambreRepository chambreRepository;
     private final SaisonRepository saisonRepository;
-    private final EventPublisher eventPublisher;
+    private final EventPublisherPort eventPublisher;
 
-    public CalculPrixUseCase(ChambreRepository chambreRepository, SaisonRepository saisonRepository, EventPublisher eventPublisher) {
+    public CalculPrixUseCase(ChambreRepository chambreRepository, SaisonRepository saisonRepository, EventPublisherPort eventPublisher) {
         this.chambreRepository = chambreRepository;
         this.saisonRepository = saisonRepository;
         this.eventPublisher = eventPublisher;
