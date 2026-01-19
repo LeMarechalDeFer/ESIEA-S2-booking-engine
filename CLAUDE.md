@@ -91,11 +91,18 @@ UseCase → `EventPublisherPort.publish()` → Kafka Topics → `EventListener` 
 
 | Service | Port | Description |
 |---------|------|-------------|
-| frontend | 3000 | Next.js (Nginx) |
-| backend | 8081 | Spring Boot API |
+| nginx | 80 | Reverse proxy (entry point) |
+| frontend | 3000 | Next.js (internal) |
+| backend | 8080 | Spring Boot API (internal) |
 | kafka-ui | 8080 | Kafka monitoring |
 | kafka | 9092 | Message broker |
 | postgres | 5432 | Database |
+
+### Nginx Reverse Proxy
+- All traffic goes through `http://localhost:80`
+- `/api/*` → Backend (Spring Boot)
+- `/swagger-ui/*` → Backend (Swagger UI)
+- `/*` → Frontend (Next.js)
 
 ## API Endpoints
 
@@ -122,4 +129,4 @@ PostgreSQL with Hibernate `ddl-auto=update`. Schema auto-generated from JPA enti
 
 **Backend**: Java 21, Spring Boot 4.0.1, Spring Data JPA, Spring Kafka, Springdoc OpenAPI
 **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS
-**Infrastructure**: PostgreSQL, Kafka (Confluent 7.5.0), Docker Compose
+**Infrastructure**: PostgreSQL, Kafka (Confluent 7.5.0), Nginx (reverse proxy), Docker Compose

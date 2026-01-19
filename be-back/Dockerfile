@@ -30,7 +30,7 @@ COPY --from=builder --chown=spring:spring /app/target/*.jar app.jar
 
 USER spring
 
-EXPOSE 8081
+EXPOSE 8080
 
 ENV JAVA_OPTS="-Xmx512m -Xms256m"
 

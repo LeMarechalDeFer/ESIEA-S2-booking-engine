@@ -7,6 +7,7 @@ services:
       - 'POSTGRES_USER=myuser'
     ports:
       - '5432:5432'
+
   kafka:
     image: 'confluentinc/cp-kafka:7.5.0'
     ports:
@@ -24,12 +25,39 @@ services:
       - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
       - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
       - CLUSTER_ID=MkU3OEVBNTcwNTJENDM2Qk
+
   frontend:
     build:
       context: ./be-front
       dockerfile: Dockerfile
+    expose:
+      - '3000'
+
+  backend:
+    build:
+      context: ./be-back
+      dockerfile: Dockerfile
+    expose:
+      - '8080'
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mydatabase
+      - SPRING_DATASOURCE_USERNAME=myuser
+      - SPRING_DATASOURCE_PASSWORD=secret
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      - postgres
+      - kafka
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
     ports:
-      - '3000:3000'
+      - '80:80'
+    depends_on:
+      - frontend
+      - backend
+
   kafka-ui:
     image: 'provectuslabs/kafka-ui:latest'
     ports:
@@ -38,18 +66,4 @@ services:
       - KAFKA_CLUSTERS_0_NAME=local
       - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
     depends_on:
-      - kafka
-  backend:
-    build:
-      context: ./be-back
-      dockerfile: Dockerfile
-    ports:
-      - '8081:8080'
-    environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mydatabase
-      - SPRING_DATASOURCE_USERNAME=myuser
-      - SPRING_DATASOURCE_PASSWORD=secret
-      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-    depends_on:
-      - postgres
       - kafka
