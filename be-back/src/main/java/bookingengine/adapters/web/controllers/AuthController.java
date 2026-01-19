@@ -1,5 +1,6 @@
 package bookingengine.adapters.web.controllers;
 
+import bookingengine.adapters.web.dto.ConnexionRequest;
 import bookingengine.adapters.web.dto.InscriptionRequest;
 import bookingengine.domain.entities.Utilisateur;
 import bookingengine.usecase.auth.AuthUseCase;
@@ -46,5 +47,30 @@ public class AuthController {
                         "message", "Utilisateur créé avec succès",
                         "username", utilisateur.getUsername()
                 ));
+    }
+
+    @PostMapping("connexion")
+    @Operation(
+            summary = "Connecter un utilisateur",
+            description = "Vérifie les identifiants et connecte l'utilisateur"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Connexion réussie"),
+            @ApiResponse(responseCode = "401", description = "Identifiants invalides", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Erreur interne du serveur", content = @Content)
+    })
+    public ResponseEntity<Map<String, Object>> connexion(@RequestBody ConnexionRequest request) {
+        boolean valid = authUseCase.verifierMotDePasse(request.username(), request.password());
+        if (!valid) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Identifiants invalides"));
+        }
+        Utilisateur utilisateur = authUseCase.obtenirUtilisateur(request.username());
+        return ResponseEntity.ok(Map.of(
+                "message", "Connexion réussie",
+                "username", utilisateur.getUsername(),
+                "email", utilisateur.getEmail(),
+                "role", utilisateur.getRole()
+        ));
     }
 }

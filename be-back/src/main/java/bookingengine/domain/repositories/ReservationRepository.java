@@ -2,6 +2,7 @@ package bookingengine.domain.repositories;
 
 import bookingengine.domain.entities.Reservation;
 import bookingengine.domain.entities.ReservationStatus;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,4 +15,5 @@ public interface ReservationRepository {
     List<Reservation> findByChambreId(Long chambreId);
     List<Reservation> findByUtilisateurId(Long utilisateurId);
     boolean existsById(Long id);
+    List<Reservation> findConflictingReservations(Long chambreId, LocalDate dateDebut, LocalDate dateFin);
 }

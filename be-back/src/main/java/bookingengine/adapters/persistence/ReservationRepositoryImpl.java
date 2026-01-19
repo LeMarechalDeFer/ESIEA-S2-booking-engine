@@ -8,6 +8,7 @@ import bookingengine.domain.entities.ReservationStatus;
 import bookingengine.domain.repositories.ReservationRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -63,5 +64,13 @@ public class ReservationRepositoryImpl implements ReservationRepository {
     @Override
     public boolean existsById(Long id) {
         return jpaRepository.existsById(id);
+    }
+
+    @Override
+    public List<Reservation> findConflictingReservations(Long chambreId, LocalDate dateDebut, LocalDate dateFin) {
+        return jpaRepository.findConflictingReservations(chambreId, dateDebut, dateFin)
+                .stream()
+                .map(mapper::toDomain)
+                .toList();
     }
 }

@@ -5,9 +5,9 @@ import bookingengine.domain.entities.PaymentStatus;
 import bookingengine.domain.events.PaymentCreatedEvent;
 import bookingengine.domain.events.PaymentStatusChangedEvent;
 import bookingengine.domain.exceptions.EntityNotFoundException;
+import bookingengine.domain.ports.EventPublisherPort;
 import bookingengine.domain.repositories.PaymentRepository;
 import bookingengine.domain.repositories.ReservationRepository;
-import bookingengine.frameworks.kafka.EventPublisher;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -16,9 +16,9 @@ public class PaymentUseCase {
 
     private final PaymentRepository paymentRepository;
     private final ReservationRepository reservationRepository;
-    private final EventPublisher eventPublisher;
+    private final EventPublisherPort eventPublisher;
 
-    public PaymentUseCase(PaymentRepository paymentRepository, ReservationRepository reservationRepository, EventPublisher eventPublisher) {
+    public PaymentUseCase(PaymentRepository paymentRepository, ReservationRepository reservationRepository, EventPublisherPort eventPublisher) {
         this.paymentRepository = paymentRepository;
         this.reservationRepository = reservationRepository;
         this.eventPublisher = eventPublisher;

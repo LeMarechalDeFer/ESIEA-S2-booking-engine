@@ -36,4 +36,9 @@ public class AuthUseCase {
                 .map(user -> passwordEncoder.matches(password, user.getPassword()))
                 .orElse(false);
     }
+
+    public Utilisateur obtenirUtilisateur(String username) {
+        return utilisateurRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("Utilisateur non trouvé: " + username));
+    }
 }

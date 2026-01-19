@@ -5,18 +5,19 @@ import bookingengine.domain.entities.ReservationStatus;
 import bookingengine.domain.events.ReservationCreatedEvent;
 import bookingengine.domain.events.ReservationCancelledEvent;
 import bookingengine.domain.exceptions.EntityNotFoundException;
+import bookingengine.domain.ports.EventPublisherPort;
 import bookingengine.domain.repositories.ReservationRepository;
-import bookingengine.frameworks.kafka.EventPublisher;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 public class ReservationUseCase {
 
     private final ReservationRepository reservationRepository;
-    private final EventPublisher eventPublisher;
+    private final EventPublisherPort eventPublisher;
 
-    public ReservationUseCase(ReservationRepository reservationRepository, EventPublisher eventPublisher) {
+    public ReservationUseCase(ReservationRepository reservationRepository, EventPublisherPort eventPublisher) {
         this.reservationRepository = reservationRepository;
         this.eventPublisher = eventPublisher;
     }
@@ -103,11 +104,23 @@ public class ReservationUseCase {
     public void annulerReservation(Long id, String reason) {
         Reservation reservation = reservationRepository.findById(id)
             .orElseThrow(() -> new EntityNotFoundException("Reservation not found with id: " + id));
-        
+
         reservation.setStatus(ReservationStatus.CANCELLED);
         reservation.setCancelledAt(LocalDateTime.now());
-        
+
         reservationRepository.save(reservation);
         eventPublisher.publish(ReservationCancelledEvent.of(id, reason));
+    }
+
+    public boolean verifierDisponibilite(Long chambreId, LocalDate dateDebut, LocalDate dateFin) {
+        if (dateDebut.isAfter(dateFin)) {
+            throw new IllegalArgumentException("Start date must be before or equal to end date");
+        }
+        List<Reservation> conflits = reservationRepository.findConflictingReservations(chambreId, dateDebut, dateFin);
+        return conflits.isEmpty();
+    }
+
+    public List<Reservation> obtenirReservationsConflictuelles(Long chambreId, LocalDate dateDebut, LocalDate dateFin) {
+        return reservationRepository.findConflictingReservations(chambreId, dateDebut, dateFin);
     }
 }
