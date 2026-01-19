@@ -3,21 +3,19 @@ package bookingengine.usecase.saison;
 import bookingengine.domain.entities.Saison;
 import bookingengine.domain.events.SaisonCreatedEvent;
 import bookingengine.domain.exceptions.EntityNotFoundException;
+import bookingengine.domain.ports.EventPublisherPort;
 import bookingengine.domain.repositories.SaisonRepository;
-import bookingengine.frameworks.kafka.EventPublisher;
-import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-@Service
 public class SaisonUseCase {
 
     private final SaisonRepository saisonRepository;
-    private final EventPublisher eventPublisher;
+    private final EventPublisherPort eventPublisher;
 
-    public SaisonUseCase(SaisonRepository saisonRepository, EventPublisher eventPublisher) {
+    public SaisonUseCase(SaisonRepository saisonRepository, EventPublisherPort eventPublisher) {
         this.saisonRepository = saisonRepository;
         this.eventPublisher = eventPublisher;
     }

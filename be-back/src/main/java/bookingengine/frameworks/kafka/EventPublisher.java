@@ -7,16 +7,17 @@ import bookingengine.domain.events.PaymentCreatedEvent;
 import bookingengine.domain.events.PaymentStatusChangedEvent;
 import bookingengine.domain.events.ReservationCreatedEvent;
 import bookingengine.domain.events.ReservationCancelledEvent;
+import bookingengine.domain.ports.EventPublisherPort;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
-@Service
-public class EventPublisher {
+@Component
+public class EventPublisher implements EventPublisherPort {
 
     private static final Logger log = LoggerFactory.getLogger(EventPublisher.class);
 

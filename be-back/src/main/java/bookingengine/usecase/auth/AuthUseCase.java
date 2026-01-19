@@ -1,17 +1,15 @@
 package bookingengine.usecase.auth;
 
 import bookingengine.domain.entities.Utilisateur;
+import bookingengine.domain.ports.PasswordEncoderPort;
 import bookingengine.domain.repositories.UtilisateurRepository;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
 
-@Service
 public class AuthUseCase {
 
     private final UtilisateurRepository utilisateurRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final PasswordEncoderPort passwordEncoder;
 
-    public AuthUseCase(UtilisateurRepository utilisateurRepository, PasswordEncoder passwordEncoder) {
+    public AuthUseCase(UtilisateurRepository utilisateurRepository, PasswordEncoderPort passwordEncoder) {
         this.utilisateurRepository = utilisateurRepository;
         this.passwordEncoder = passwordEncoder;
     }
