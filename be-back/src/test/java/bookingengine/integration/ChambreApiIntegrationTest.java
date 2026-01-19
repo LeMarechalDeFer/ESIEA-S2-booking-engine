@@ -58,7 +58,7 @@ class ChambreApiIntegrationTest {
             // CREATE
             ChambreDto newChambre = new ChambreDto(null, "101", "Double", 89.99, 2, "Chambre test", true);
 
-            MvcResult createResult = mockMvc.perform(post("/api/chambres")
+            MvcResult createResult = mockMvc.perform(post("/chambres")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(newChambre)))
                     .andExpect(status().isCreated())
@@ -71,7 +71,7 @@ class ChambreApiIntegrationTest {
             Long createdId = created.id();
 
             // READ
-            mockMvc.perform(get("/api/chambres/" + createdId))
+            mockMvc.perform(get("/chambres/" + createdId))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.numero").value("101"))
                     .andExpect(jsonPath("$.type").value("Double"));
@@ -79,7 +79,7 @@ class ChambreApiIntegrationTest {
             // UPDATE
             ChambreDto updatedChambre = new ChambreDto(createdId, "101", "Suite", 150.0, 3, "Suite mise à jour", true);
 
-            mockMvc.perform(put("/api/chambres/" + createdId)
+            mockMvc.perform(put("/chambres/" + createdId)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(updatedChambre)))
                     .andExpect(status().isOk())
@@ -87,23 +87,23 @@ class ChambreApiIntegrationTest {
                     .andExpect(jsonPath("$.prixBase").value(150.0));
 
             // DELETE
-            mockMvc.perform(delete("/api/chambres/" + createdId))
+            mockMvc.perform(delete("/chambres/" + createdId))
                     .andExpect(status().isNoContent());
 
-            mockMvc.perform(get("/api/chambres/" + createdId))
+            mockMvc.perform(get("/chambres/" + createdId))
                     .andExpect(status().isNotFound());
         }
     }
 
     @Nested
-    @DisplayName("GET /api/chambres")
+    @DisplayName("GET /chambres")
     @WithMockUser
     class GetAllChambresTests {
 
         @Test
         @DisplayName("Should return empty list initially")
         void shouldReturnEmptyListInitially() throws Exception {
-            mockMvc.perform(get("/api/chambres"))
+            mockMvc.perform(get("/chambres"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$").isArray())
                     .andExpect(jsonPath("$.length()").value(0));
@@ -113,25 +113,25 @@ class ChambreApiIntegrationTest {
         @DisplayName("Should return all created chambres")
         void shouldReturnAllCreatedChambres() throws Exception {
             // Create first chambre
-            mockMvc.perform(post("/api/chambres")
+            mockMvc.perform(post("/chambres")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(
                             new ChambreDto(null, "101", "Double", 89.99, 2, "Desc 1", true))));
 
             // Create second chambre
-            mockMvc.perform(post("/api/chambres")
+            mockMvc.perform(post("/chambres")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(
                             new ChambreDto(null, "102", "Simple", 59.99, 1, "Desc 2", true))));
 
-            mockMvc.perform(get("/api/chambres"))
+            mockMvc.perform(get("/chambres"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.length()").value(2));
         }
     }
 
     @Nested
-    @DisplayName("GET /api/chambres/disponibles")
+    @DisplayName("GET /chambres/disponibles")
     @WithMockUser
     class GetChambresDisponiblesTests {
 
@@ -139,18 +139,18 @@ class ChambreApiIntegrationTest {
         @DisplayName("Should return only available chambres")
         void shouldReturnOnlyAvailableChambres() throws Exception {
             // Create available chambre
-            mockMvc.perform(post("/api/chambres")
+            mockMvc.perform(post("/chambres")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(
                             new ChambreDto(null, "101", "Double", 89.99, 2, "Desc", true))));
 
             // Create unavailable chambre
-            mockMvc.perform(post("/api/chambres")
+            mockMvc.perform(post("/chambres")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(
                             new ChambreDto(null, "102", "Simple", 59.99, 1, "Desc", false))));
 
-            mockMvc.perform(get("/api/chambres/disponibles"))
+            mockMvc.perform(get("/chambres/disponibles"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.length()").value(1))
                     .andExpect(jsonPath("$[0].disponible").value(true));
@@ -158,29 +158,29 @@ class ChambreApiIntegrationTest {
     }
 
     @Nested
-    @DisplayName("GET /api/chambres/type/{type}")
+    @DisplayName("GET /chambres/type/{type}")
     @WithMockUser
     class GetChambresByTypeTests {
 
         @Test
         @DisplayName("Should return chambres filtered by type")
         void shouldReturnChambresFilteredByType() throws Exception {
-            mockMvc.perform(post("/api/chambres")
+            mockMvc.perform(post("/chambres")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(
                             new ChambreDto(null, "101", "Double", 89.99, 2, "Desc", true))));
 
-            mockMvc.perform(post("/api/chambres")
+            mockMvc.perform(post("/chambres")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(
                             new ChambreDto(null, "102", "Suite", 199.99, 4, "Desc", true))));
 
-            mockMvc.perform(post("/api/chambres")
+            mockMvc.perform(post("/chambres")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(
                             new ChambreDto(null, "201", "Double", 99.99, 2, "Desc", true))));
 
-            mockMvc.perform(get("/api/chambres/type/Double"))
+            mockMvc.perform(get("/chambres/type/Double"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.length()").value(2));
         }
@@ -194,7 +194,7 @@ class ChambreApiIntegrationTest {
         @Test
         @DisplayName("Should return 404 for non-existent chambre")
         void shouldReturn404ForNonExistentChambre() throws Exception {
-            mockMvc.perform(get("/api/chambres/999"))
+            mockMvc.perform(get("/chambres/999"))
                     .andExpect(status().isNotFound());
         }
     }

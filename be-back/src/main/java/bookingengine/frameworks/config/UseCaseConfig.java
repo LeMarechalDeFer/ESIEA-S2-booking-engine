@@ -3,11 +3,15 @@ package bookingengine.frameworks.config;
 import bookingengine.domain.ports.EventPublisherPort;
 import bookingengine.domain.ports.PasswordEncoderPort;
 import bookingengine.domain.repositories.ChambreRepository;
+import bookingengine.domain.repositories.PaymentRepository;
+import bookingengine.domain.repositories.ReservationRepository;
 import bookingengine.domain.repositories.SaisonRepository;
 import bookingengine.domain.repositories.UtilisateurRepository;
 import bookingengine.usecase.auth.AuthUseCase;
 import bookingengine.usecase.chambre.ChambreUseCase;
+import bookingengine.usecase.payment.PaymentUseCase;
 import bookingengine.usecase.prix.CalculPrixUseCase;
+import bookingengine.usecase.reservation.ReservationUseCase;
 import bookingengine.usecase.saison.SaisonUseCase;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,5 +39,20 @@ public class UseCaseConfig {
     @Bean
     public AuthUseCase authUseCase(UtilisateurRepository utilisateurRepository, PasswordEncoderPort passwordEncoder) {
         return new AuthUseCase(utilisateurRepository, passwordEncoder);
+    }
+
+    @Bean
+    public ReservationUseCase reservationUseCase(ReservationRepository reservationRepository,
+                                                  ChambreRepository chambreRepository,
+                                                  PaymentRepository paymentRepository,
+                                                  EventPublisherPort eventPublisher) {
+        return new ReservationUseCase(reservationRepository, chambreRepository, paymentRepository, eventPublisher);
+    }
+
+    @Bean
+    public PaymentUseCase paymentUseCase(PaymentRepository paymentRepository,
+                                         ReservationRepository reservationRepository,
+                                         EventPublisherPort eventPublisher) {
+        return new PaymentUseCase(paymentRepository, reservationRepository, eventPublisher);
     }
 }

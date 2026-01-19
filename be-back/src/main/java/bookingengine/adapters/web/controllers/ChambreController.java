@@ -3,27 +3,33 @@ package bookingengine.adapters.web.controllers;
 import bookingengine.adapters.web.dto.ChambreDto;
 import bookingengine.domain.entities.Chambre;
 import bookingengine.usecase.chambre.ChambreUseCase;
+import bookingengine.usecase.reservation.ReservationUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @RestController
-@RequestMapping("api/chambres")
-@Tag(name = "Chambres", description = "API de gestion des chambres d'hôtel")
+@RequestMapping("chambres")
+@Tag(name = "Chambres", description = "Gestion des chambres")
 public class ChambreController {
 
     private final ChambreUseCase chambreUseCase;
+    private final ReservationUseCase reservationUseCase;
 
-    public ChambreController(ChambreUseCase chambreUseCase) {
+    public ChambreController(ChambreUseCase chambreUseCase, ReservationUseCase reservationUseCase) {
         this.chambreUseCase = chambreUseCase;
+        this.reservationUseCase = reservationUseCase;
     }
 
     @GetMapping
@@ -71,6 +77,52 @@ public class ChambreController {
     public ResponseEntity<List<ChambreDto>> getChambresDisponibles() {
         List<ChambreDto> chambres = chambreUseCase.obtenirChambresDisponibles()
                 .stream()
+                .map(ChambreDto::from)
+                .toList();
+        return ResponseEntity.ok(chambres);
+    }
+
+    @GetMapping("{id}/disponibilite")
+    @Operation(
+            summary = "Vérifier la disponibilité d'une chambre",
+            description = "Vérifie si une chambre est disponible pour une période donnée (pas de réservation conflictuelle)"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Statut de disponibilité retourné"),
+            @ApiResponse(responseCode = "404", description = "Chambre non trouvée", content = @Content),
+            @ApiResponse(responseCode = "400", description = "Dates invalides", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Erreur interne du serveur", content = @Content)
+    })
+    public ResponseEntity<Map<String, Object>> verifierDisponibilite(
+            @PathVariable Long id,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateDebut,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFin) {
+        chambreUseCase.obtenirChambre(id);
+        boolean disponible = reservationUseCase.verifierDisponibilite(id, dateDebut, dateFin);
+        return ResponseEntity.ok(Map.of(
+                "chambreId", id,
+                "dateDebut", dateDebut.toString(),
+                "dateFin", dateFin.toString(),
+                "disponible", disponible
+        ));
+    }
+
+    @GetMapping("disponibles/periode")
+    @Operation(
+            summary = "Lister les chambres disponibles pour une période",
+            description = "Récupère les chambres sans réservation conflictuelle pour la période spécifiée"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Liste des chambres disponibles pour la période"),
+            @ApiResponse(responseCode = "400", description = "Dates invalides", content = @Content),
+            @ApiResponse(responseCode = "500", description = "Erreur interne du serveur", content = @Content)
+    })
+    public ResponseEntity<List<ChambreDto>> getChambresDisponiblesPourPeriode(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateDebut,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFin) {
+        List<ChambreDto> chambres = chambreUseCase.obtenirChambresDisponibles()
+                .stream()
+                .filter(chambre -> reservationUseCase.verifierDisponibilite(chambre.getId(), dateDebut, dateFin))
                 .map(ChambreDto::from)
                 .toList();
         return ResponseEntity.ok(chambres);

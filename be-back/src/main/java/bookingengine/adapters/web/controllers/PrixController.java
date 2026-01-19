@@ -12,8 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("api/prix")
-@Tag(name = "Prix", description = "API de calcul des prix de séjour avec prise en compte des saisons tarifaires")
+@RequestMapping("prix")
+@Tag(name = "Prix", description = "Calcul des prix")
 public class PrixController {
 
     private final CalculPrixUseCase calculPrixUseCase;

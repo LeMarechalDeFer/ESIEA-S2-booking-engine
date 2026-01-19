@@ -58,7 +58,7 @@ class PrixApiIntegrationTest {
 
     private Long createChambre(String numero, double prixBase) throws Exception {
         ChambreDto chambre = new ChambreDto(null, numero, "Double", prixBase, 2, "Desc", true);
-        MvcResult result = mockMvc.perform(post("/api/chambres")
+        MvcResult result = mockMvc.perform(post("/chambres")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(chambre)))
                 .andExpect(status().isCreated())
@@ -71,14 +71,14 @@ class PrixApiIntegrationTest {
 
     private void createSaison(String nom, LocalDate debut, LocalDate fin, double coefficient) throws Exception {
         SaisonDto saison = new SaisonDto(null, nom, debut, fin, coefficient);
-        mockMvc.perform(post("/api/saisons")
+        mockMvc.perform(post("/saisons")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(saison)))
                 .andExpect(status().isCreated());
     }
 
     @Nested
-    @DisplayName("POST /api/prix/calculer")
+    @DisplayName("POST /prix/calculer")
     @WithMockUser
     class CalculerPrixTests {
 
@@ -93,7 +93,7 @@ class PrixApiIntegrationTest {
                     LocalDate.of(2024, 5, 4)
             );
 
-            mockMvc.perform(post("/api/prix/calculer")
+            mockMvc.perform(post("/prix/calculer")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
@@ -114,7 +114,7 @@ class PrixApiIntegrationTest {
                     LocalDate.of(2024, 7, 17)
             );
 
-            mockMvc.perform(post("/api/prix/calculer")
+            mockMvc.perform(post("/prix/calculer")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
@@ -135,7 +135,7 @@ class PrixApiIntegrationTest {
                     LocalDate.of(2024, 6, 2)
             );
 
-            mockMvc.perform(post("/api/prix/calculer")
+            mockMvc.perform(post("/prix/calculer")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
@@ -155,7 +155,7 @@ class PrixApiIntegrationTest {
                     LocalDate.of(2024, 5, 3)
             );
 
-            mockMvc.perform(post("/api/prix/calculer")
+            mockMvc.perform(post("/prix/calculer")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isOk())
@@ -175,7 +175,7 @@ class PrixApiIntegrationTest {
                     LocalDate.of(2024, 5, 3)
             );
 
-            mockMvc.perform(post("/api/prix/calculer")
+            mockMvc.perform(post("/prix/calculer")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isNotFound());
@@ -192,7 +192,7 @@ class PrixApiIntegrationTest {
                     LocalDate.of(2024, 5, 5)
             );
 
-            mockMvc.perform(post("/api/prix/calculer")
+            mockMvc.perform(post("/prix/calculer")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest());
