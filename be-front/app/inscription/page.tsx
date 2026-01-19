@@ -6,9 +6,32 @@ import Link from 'next/link';
 import { authApi } from '@/lib/api';
 import { useMutation } from '@/lib/hooks';
 
+interface PendingReservation {
+  chambreId: number;
+  dateDebut: string;
+  dateFin: string;
+  prixTotal?: number;
+  numeroChambre?: string;
+  typeChambre?: string;
+}
+
+function getStoredPendingReservation(): PendingReservation | null {
+  if (typeof window === 'undefined') return null;
+  const pendingStr = localStorage.getItem('pendingReservation');
+  if (pendingStr) {
+    try {
+      return JSON.parse(pendingStr);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
 export default function InscriptionPage() {
   const router = useRouter();
   const [success, setSuccess] = useState(false);
+  const [pendingReservation] = useState<PendingReservation | null>(getStoredPendingReservation);
   const [form, setForm] = useState({
     username: '',
     email: '',
@@ -38,7 +61,7 @@ export default function InscriptionPage() {
     if (result) {
       setSuccess(true);
       setTimeout(() => {
-        router.push('/auth/connexion');
+        router.push('/connexion');
       }, 2000);
     }
   };
@@ -62,6 +85,11 @@ export default function InscriptionPage() {
             <p className="text-sm text-gray-500">
               Votre compte a ete cree avec succes. Redirection vers la page de connexion...
             </p>
+            {pendingReservation && (
+              <p className="text-sm text-blue-600 mt-2">
+                Votre reservation sera finalisee apres connexion.
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -77,6 +105,29 @@ export default function InscriptionPage() {
           </Link>
           <p className="text-sm text-gray-500 mt-2">Creez votre compte</p>
         </div>
+
+        {pendingReservation && (
+          <div className="bg-blue-50 border border-blue-200 p-4 mb-6">
+            <p className="text-sm font-medium text-blue-800 mb-1">
+              Reservation en attente
+            </p>
+            <p className="text-sm text-blue-700">
+              Chambre {pendingReservation.numeroChambre || pendingReservation.chambreId}
+              {pendingReservation.typeChambre && ` (${pendingReservation.typeChambre})`}
+            </p>
+            <p className="text-sm text-blue-700">
+              Du {new Date(pendingReservation.dateDebut).toLocaleDateString('fr-FR')} au {new Date(pendingReservation.dateFin).toLocaleDateString('fr-FR')}
+            </p>
+            {pendingReservation.prixTotal && (
+              <p className="text-sm font-medium text-blue-800 mt-1">
+                Total: {pendingReservation.prixTotal.toFixed(2)} EUR
+              </p>
+            )}
+            <p className="text-xs text-blue-600 mt-2">
+              Creez votre compte pour finaliser la reservation
+            </p>
+          </div>
+        )}
 
         <div className="bg-white p-8 border border-gray-200">
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -181,7 +232,7 @@ export default function InscriptionPage() {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-500">
               Deja un compte ?{' '}
-              <Link href="/auth/connexion" className="text-gray-900 font-medium hover:underline">
+              <Link href="/connexion" className="text-gray-900 font-medium hover:underline">
                 Se connecter
               </Link>
             </p>

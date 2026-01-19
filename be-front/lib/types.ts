@@ -40,7 +40,7 @@ export interface Payment {
   paymentDate: string;
 }
 
-export type PaymentStatus = 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED';
+export type PaymentStatus = 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'FAILED' | 'REFUNDED';
 
 export interface Utilisateur {
   id: number;
@@ -68,6 +68,7 @@ export interface ConnexionRequest {
 
 export interface ConnexionResponse {
   message: string;
+  id: number;
   username: string;
   email: string;
   role: string;

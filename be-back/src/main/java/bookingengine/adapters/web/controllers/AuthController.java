@@ -68,6 +68,7 @@ public class AuthController {
         Utilisateur utilisateur = authUseCase.obtenirUtilisateur(request.username());
         return ResponseEntity.ok(Map.of(
                 "message", "Connexion réussie",
+                "id", utilisateur.getId(),
                 "username", utilisateur.getUsername(),
                 "email", utilisateur.getEmail(),
                 "role", utilisateur.getRole()

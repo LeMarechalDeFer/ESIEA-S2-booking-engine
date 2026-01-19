@@ -18,6 +18,23 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
+/**
+ * Security Configuration for the Hotel Booking API.
+ *
+ * Current implementation:
+ * - All API endpoints are publicly accessible (permitAll)
+ * - Role-based access control is handled on the frontend
+ * - Authentication is done via /auth/connexion which returns user info including role
+ *
+ * For production, implement JWT-based authentication:
+ * 1. Generate JWT token on /auth/connexion
+ * 2. Add JwtAuthenticationFilter to validate tokens
+ * 3. Use @PreAuthorize annotations on controllers for role-based access
+ *
+ * Roles:
+ * - ADMIN: Full CRUD access to all resources (chambres, saisons, reservations, payments)
+ * - USER: Can view chambres/saisons, create reservations, view own reservations/payments
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -41,9 +58,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedOriginPatterns(List.of("*"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
         configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
@@ -64,7 +82,13 @@ public class SecurityConfig {
                     "/v3/api-docs.yaml",
                     "/swagger-resources/**",
                     "/webjars/**",
-                    "/api/**"
+                    "/actuator/**",
+                    "/auth/**",
+                    "/chambres/**",
+                    "/saisons/**",
+                    "/reservations/**",
+                    "/payments/**",
+                    "/prix/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             );

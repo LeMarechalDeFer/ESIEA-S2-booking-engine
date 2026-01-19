@@ -3,13 +3,36 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { authApi } from '@/lib/api';
+import { authApi, reservationApi } from '@/lib/api';
 import { useAuth, useMutation } from '@/lib/hooks';
+
+interface PendingReservation {
+  chambreId: number;
+  dateDebut: string;
+  dateFin: string;
+  prixTotal?: number;
+  numeroChambre?: string;
+  typeChambre?: string;
+}
+
+function getStoredPendingReservation(): PendingReservation | null {
+  if (typeof window === 'undefined') return null;
+  const pendingStr = localStorage.getItem('pendingReservation');
+  if (pendingStr) {
+    try {
+      return JSON.parse(pendingStr);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
 
 export default function ConnexionPage() {
   const router = useRouter();
   const { login, isAuthenticated, user, logout } = useAuth();
   const [form, setForm] = useState({ username: '', password: '' });
+  const [pendingReservation] = useState<PendingReservation | null>(getStoredPendingReservation);
 
   const { mutate: doLogin, loading, error } = useMutation(authApi.connexion);
 
@@ -18,13 +41,43 @@ export default function ConnexionPage() {
     const result = await doLogin(form);
     if (result) {
       login({
+        id: result.id,
         username: result.username,
         email: result.email,
         role: result.role,
         prenom: result.prenom,
         nom: result.nom,
       });
-      router.push('/admin');
+
+      // Check for pending reservation
+      const pendingReservationStr = localStorage.getItem('pendingReservation');
+      if (pendingReservationStr) {
+        try {
+          const pendingReservation = JSON.parse(pendingReservationStr);
+          // Create the reservation
+          await reservationApi.create({
+            chambreId: pendingReservation.chambreId,
+            utilisateurId: result.id,
+            dateDebut: pendingReservation.dateDebut,
+            dateFin: pendingReservation.dateFin,
+          });
+          // Clear the pending reservation
+          localStorage.removeItem('pendingReservation');
+          // Redirect to account page with success message
+          router.push('/mon-compte?reservation=success');
+          return;
+        } catch (err) {
+          console.error('Failed to create pending reservation:', err);
+          localStorage.removeItem('pendingReservation');
+        }
+      }
+
+      // Redirect based on role
+      if (result.role === 'ADMIN') {
+        router.push('/admin');
+      } else {
+        router.push('/mon-compte');
+      }
     }
   };
 
@@ -48,11 +101,19 @@ export default function ConnexionPage() {
               <p className="text-sm text-gray-500">{user?.email}</p>
             </div>
             <div className="space-y-3">
+              {user?.role === 'ADMIN' && (
+                <Link
+                  href="/admin"
+                  className="block w-full px-4 py-3 bg-gray-900 text-white text-sm font-medium text-center hover:bg-gray-800 transition-colors"
+                >
+                  Administration
+                </Link>
+              )}
               <Link
-                href="/admin"
+                href="/mon-compte"
                 className="block w-full px-4 py-3 bg-gray-900 text-white text-sm font-medium text-center hover:bg-gray-800 transition-colors"
               >
-                Acceder a l administration
+                Mon compte
               </Link>
               <button
                 onClick={() => { logout(); router.push('/'); }}
@@ -76,6 +137,29 @@ export default function ConnexionPage() {
           </Link>
           <p className="text-sm text-gray-500 mt-2">Connectez-vous a votre compte</p>
         </div>
+
+        {pendingReservation && (
+          <div className="bg-blue-50 border border-blue-200 p-4 mb-6">
+            <p className="text-sm font-medium text-blue-800 mb-1">
+              Reservation en attente
+            </p>
+            <p className="text-sm text-blue-700">
+              Chambre {pendingReservation.numeroChambre || pendingReservation.chambreId}
+              {pendingReservation.typeChambre && ` (${pendingReservation.typeChambre})`}
+            </p>
+            <p className="text-sm text-blue-700">
+              Du {new Date(pendingReservation.dateDebut).toLocaleDateString('fr-FR')} au {new Date(pendingReservation.dateFin).toLocaleDateString('fr-FR')}
+            </p>
+            {pendingReservation.prixTotal && (
+              <p className="text-sm font-medium text-blue-800 mt-1">
+                Total: {pendingReservation.prixTotal.toFixed(2)} EUR
+              </p>
+            )}
+            <p className="text-xs text-blue-600 mt-2">
+              Connectez-vous pour finaliser votre reservation
+            </p>
+          </div>
+        )}
 
         <div className="bg-white p-8 border border-gray-200">
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -122,7 +206,7 @@ export default function ConnexionPage() {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-500">
               Pas encore de compte ?{' '}
-              <Link href="/auth/inscription" className="text-gray-900 font-medium hover:underline">
+              <Link href="/inscription" className="text-gray-900 font-medium hover:underline">
                 S inscrire
               </Link>
             </p>

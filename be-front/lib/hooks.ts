@@ -58,6 +58,7 @@ export function useMutation<T, R>(
 
 // Hook pour l'authentification
 interface UserData {
+  id: number;
   username: string;
   email: string;
   role: string;
@@ -65,15 +66,21 @@ interface UserData {
   nom?: string;
 }
 
-export function useAuth() {
-  const [user, setUser] = useState<UserData | null>(null);
-
-  useEffect(() => {
-    const stored = localStorage.getItem('user');
-    if (stored) {
-      setUser(JSON.parse(stored));
+function getStoredUser(): UserData | null {
+  if (typeof window === 'undefined') return null;
+  const stored = localStorage.getItem('user');
+  if (stored) {
+    try {
+      return JSON.parse(stored);
+    } catch {
+      return null;
     }
-  }, []);
+  }
+  return null;
+}
+
+export function useAuth() {
+  const [user, setUser] = useState<UserData | null>(getStoredUser);
 
   const login = (userData: UserData) => {
     setUser(userData);

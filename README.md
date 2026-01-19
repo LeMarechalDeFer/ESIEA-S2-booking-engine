@@ -79,9 +79,10 @@ Au demarrage, la base de donnees est automatiquement peuplee avec :
 | URL | Description |
 |-----|-------------|
 | http://localhost/ | Frontend - Page d'accueil |
-| http://localhost/admin | Frontend - Administration |
-| http://localhost/auth/connexion | Frontend - Connexion |
-| http://localhost/auth/inscription | Frontend - Inscription |
+| http://localhost/mon-compte | Frontend - Espace utilisateur (reservations) |
+| http://localhost/admin | Frontend - Administration (ADMIN uniquement) |
+| http://localhost/connexion | Frontend - Connexion |
+| http://localhost/inscription | Frontend - Inscription |
 | http://localhost/swagger-ui.html | Swagger UI - Documentation API |
 | http://localhost:8080 | Kafka UI |
 

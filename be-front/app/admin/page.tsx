@@ -5,46 +5,70 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { chambreApi, saisonApi, reservationApi, paymentApi } from '@/lib/api';
 import { useApi, useMutation, useAuth } from '@/lib/hooks';
-import type { Chambre, Saison, Reservation, Payment } from '@/lib/types';
+import type { Chambre, Saison } from '@/lib/types';
 
 // Tab types
 type TabId = 'dashboard' | 'chambres' | 'saisons' | 'reservations' | 'paiements';
 
-// Header Component
-function AdminHeader() {
-  const { user, logout, isAuthenticated } = useAuth();
-  const router = useRouter();
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h1 className="text-2xl font-light text-gray-900 mb-4">Acces restreint</h1>
-          <p className="text-gray-500 mb-6">Vous devez etre connecte pour acceder a l administration.</p>
-          <Link
-            href="/auth/connexion"
-            className="px-6 py-3 bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors"
-          >
-            Se connecter
-          </Link>
+// Access Denied Component
+function AccessDenied({ reason }: { reason: 'not_authenticated' | 'not_admin' }) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="text-center max-w-sm">
+        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <h1 className="text-2xl font-light text-gray-900 mb-4">Acces restreint</h1>
+        <p className="text-gray-500 mb-6">
+          {reason === 'not_authenticated'
+            ? 'Vous devez etre connecte pour acceder a l administration.'
+            : 'Cette page est reservee aux administrateurs. Votre compte n a pas les permissions necessaires.'}
+        </p>
+        <div className="space-y-3">
+          {reason === 'not_authenticated' ? (
+            <Link
+              href="/connexion"
+              className="block w-full px-6 py-3 bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors"
+            >
+              Se connecter
+            </Link>
+          ) : (
+            <Link
+              href="/"
+              className="block w-full px-6 py-3 bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors"
+            >
+              Retour a l accueil
+            </Link>
+          )}
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
+
+// Header Component
+function AdminHeader() {
+  const { user, logout } = useAuth();
+  const router = useRouter();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <header className="bg-white border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-6 py-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
         <div className="flex justify-between items-center">
-          <div className="flex items-center gap-6">
-            <Link href="/" className="text-xl font-light tracking-wide text-gray-900">
+          <div className="flex items-center gap-4 sm:gap-6">
+            <Link href="/" className="text-lg sm:text-xl font-light tracking-wide text-gray-900">
               HOTEL & SPA
             </Link>
-            <span className="text-gray-300">|</span>
-            <span className="text-sm text-gray-500">Administration</span>
+            <span className="hidden sm:inline text-gray-300">|</span>
+            <span className="hidden sm:inline text-sm text-gray-500">Administration</span>
           </div>
-          <div className="flex items-center gap-4">
+          {/* Desktop menu */}
+          <div className="hidden sm:flex items-center gap-4">
             <span className="text-sm text-gray-600">{user?.prenom} {user?.nom}</span>
+            <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">ADMIN</span>
             <button
               onClick={() => { logout(); router.push('/'); }}
               className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
@@ -52,7 +76,35 @@ function AdminHeader() {
               Deconnexion
             </button>
           </div>
+          {/* Mobile menu button */}
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="sm:hidden p-2 text-gray-600"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {menuOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
         </div>
+        {/* Mobile menu */}
+        {menuOpen && (
+          <div className="sm:hidden mt-4 pt-4 border-t border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm text-gray-600">{user?.prenom} {user?.nom}</span>
+              <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">ADMIN</span>
+            </div>
+            <button
+              onClick={() => { logout(); router.push('/'); }}
+              className="w-full text-left text-sm text-gray-500 hover:text-gray-900 transition-colors"
+            >
+              Deconnexion
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );
@@ -75,41 +127,68 @@ function DashboardTab() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <div>
-        <h2 className="text-2xl font-light text-gray-900 mb-6">Tableau de bord</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <div className="bg-white p-6 border border-gray-200">
-            <p className="text-sm text-gray-500 mb-1">Chambres</p>
-            <p className="text-3xl font-light text-gray-900">{stats.totalChambres}</p>
+        <h2 className="text-xl sm:text-2xl font-light text-gray-900 mb-4 sm:mb-6">Tableau de bord</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+          <div className="bg-white p-4 sm:p-6 border border-gray-200">
+            <p className="text-xs sm:text-sm text-gray-500 mb-1">Chambres</p>
+            <p className="text-2xl sm:text-3xl font-light text-gray-900">{stats.totalChambres}</p>
           </div>
-          <div className="bg-white p-6 border border-gray-200">
-            <p className="text-sm text-gray-500 mb-1">Disponibles</p>
-            <p className="text-3xl font-light text-green-600">{stats.chambresDisponibles}</p>
+          <div className="bg-white p-4 sm:p-6 border border-gray-200">
+            <p className="text-xs sm:text-sm text-gray-500 mb-1">Disponibles</p>
+            <p className="text-2xl sm:text-3xl font-light text-green-600">{stats.chambresDisponibles}</p>
           </div>
-          <div className="bg-white p-6 border border-gray-200">
-            <p className="text-sm text-gray-500 mb-1">Reservations</p>
-            <p className="text-3xl font-light text-gray-900">{stats.reservationsActives}</p>
+          <div className="bg-white p-4 sm:p-6 border border-gray-200">
+            <p className="text-xs sm:text-sm text-gray-500 mb-1">Reservations</p>
+            <p className="text-2xl sm:text-3xl font-light text-gray-900">{stats.reservationsActives}</p>
           </div>
-          <div className="bg-white p-6 border border-gray-200">
-            <p className="text-sm text-gray-500 mb-1">Paiements en attente</p>
-            <p className="text-3xl font-light text-orange-600">{stats.paiementsEnAttente}</p>
+          <div className="bg-white p-4 sm:p-6 border border-gray-200">
+            <p className="text-xs sm:text-sm text-gray-500 mb-1">En attente</p>
+            <p className="text-2xl sm:text-3xl font-light text-orange-600">{stats.paiementsEnAttente}</p>
           </div>
-          <div className="bg-white p-6 border border-gray-200">
-            <p className="text-sm text-gray-500 mb-1">Revenu total</p>
-            <p className="text-3xl font-light text-gray-900">{stats.totalRevenu.toFixed(0)} EUR</p>
+          <div className="bg-white p-4 sm:p-6 border border-gray-200">
+            <p className="text-xs sm:text-sm text-gray-500 mb-1">Revenu</p>
+            <p className="text-2xl sm:text-3xl font-light text-gray-900">{stats.totalRevenu.toFixed(0)} EUR</p>
           </div>
-          <div className="bg-white p-6 border border-gray-200">
-            <p className="text-sm text-gray-500 mb-1">Saisons</p>
-            <p className="text-3xl font-light text-gray-900">{stats.saisonsActives}</p>
+          <div className="bg-white p-4 sm:p-6 border border-gray-200">
+            <p className="text-xs sm:text-sm text-gray-500 mb-1">Saisons</p>
+            <p className="text-2xl sm:text-3xl font-light text-gray-900">{stats.saisonsActives}</p>
           </div>
         </div>
       </div>
 
-      {/* Recent reservations */}
+      {/* Recent reservations - card view on mobile, table on desktop */}
       <div>
         <h3 className="text-lg font-medium text-gray-900 mb-4">Reservations recentes</h3>
-        <div className="bg-white border border-gray-200">
+        {/* Mobile card view */}
+        <div className="sm:hidden space-y-3">
+          {reservations?.slice(0, 5).map((r) => (
+            <div key={r.id} className="bg-white p-4 border border-gray-200">
+              <div className="flex justify-between items-start mb-2">
+                <span className="text-sm font-medium text-gray-900">#{r.id}</span>
+                <span className={`inline-block px-2 py-1 text-xs font-medium ${
+                  r.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
+                  r.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {r.status}
+                </span>
+              </div>
+              <p className="text-sm text-gray-600">Chambre {r.chambreId}</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {new Date(r.dateDebut).toLocaleDateString('fr-FR')} - {new Date(r.dateFin).toLocaleDateString('fr-FR')}
+              </p>
+            </div>
+          ))}
+          {(!reservations || reservations.length === 0) && (
+            <div className="bg-white p-8 border border-gray-200 text-center text-gray-500">
+              Aucune reservation
+            </div>
+          )}
+        </div>
+        {/* Desktop table view */}
+        <div className="hidden sm:block bg-white border border-gray-200 overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
@@ -223,26 +302,26 @@ function ChambresTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-light text-gray-900">Chambres</h2>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h2 className="text-xl sm:text-2xl font-light text-gray-900">Chambres</h2>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors"
+          className="w-full sm:w-auto px-4 py-2 bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors"
         >
           {showForm ? 'Annuler' : 'Nouvelle chambre'}
         </button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white p-6 border border-gray-200 space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <form onSubmit={handleSubmit} className="bg-white p-4 sm:p-6 border border-gray-200 space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Numero</label>
               <input
                 type="text"
                 value={form.numero}
                 onChange={(e) => setForm({ ...form, numero: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-200 focus:border-gray-900 focus:ring-0 outline-none"
+                className="w-full px-3 py-2 border border-gray-200 focus:border-gray-900 focus:ring-0 outline-none text-sm"
                 required
               />
             </div>
@@ -251,7 +330,7 @@ function ChambresTab() {
               <select
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-200 focus:border-gray-900 focus:ring-0 outline-none bg-white"
+                className="w-full px-3 py-2 border border-gray-200 focus:border-gray-900 focus:ring-0 outline-none bg-white text-sm"
               >
                 <option value="SIMPLE">Simple</option>
                 <option value="DOUBLE">Double</option>
@@ -260,12 +339,12 @@ function ChambresTab() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Prix/nuit (EUR)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Prix/nuit</label>
               <input
                 type="number"
                 value={form.prixBase}
                 onChange={(e) => setForm({ ...form, prixBase: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-200 focus:border-gray-900 focus:ring-0 outline-none"
+                className="w-full px-3 py-2 border border-gray-200 focus:border-gray-900 focus:ring-0 outline-none text-sm"
                 required
               />
             </div>
@@ -275,7 +354,7 @@ function ChambresTab() {
                 type="number"
                 value={form.capacite}
                 onChange={(e) => setForm({ ...form, capacite: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-200 focus:border-gray-900 focus:ring-0 outline-none"
+                className="w-full px-3 py-2 border border-gray-200 focus:border-gray-900 focus:ring-0 outline-none text-sm"
                 required
               />
             </div>
@@ -285,7 +364,7 @@ function ChambresTab() {
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-200 focus:border-gray-900 focus:ring-0 outline-none"
+              className="w-full px-3 py-2 border border-gray-200 focus:border-gray-900 focus:ring-0 outline-none text-sm"
               rows={2}
             />
           </div>
@@ -302,14 +381,48 @@ function ChambresTab() {
           <button
             type="submit"
             disabled={creating || updating}
-            className="px-4 py-2 bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 disabled:bg-gray-400 transition-colors"
+            className="w-full sm:w-auto px-4 py-2 bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 disabled:bg-gray-400 transition-colors"
           >
             {editingChambre ? 'Mettre a jour' : 'Creer'}
           </button>
         </form>
       )}
 
-      <div className="bg-white border border-gray-200">
+      {/* Mobile card view */}
+      <div className="sm:hidden space-y-3">
+        {loading && <div className="bg-white p-8 border border-gray-200 text-center text-gray-500">Chargement...</div>}
+        {error && <div className="bg-white p-8 border border-gray-200 text-center text-red-500">Erreur: {error}</div>}
+        {chambres?.map((chambre) => (
+          <div key={chambre.id} className="bg-white p-4 border border-gray-200">
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <span className="text-sm font-medium text-gray-900">Chambre {chambre.numero}</span>
+                <span className="ml-2 text-xs text-gray-500">{chambre.type}</span>
+              </div>
+              <span className={`inline-block px-2 py-1 text-xs font-medium ${
+                chambre.disponible ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+              }`}>
+                {chambre.disponible ? 'Dispo' : 'Occupee'}
+              </span>
+            </div>
+            <div className="text-sm text-gray-600 mb-3">
+              <span>{chambre.prixBase} EUR/nuit</span>
+              <span className="mx-2">-</span>
+              <span>{chambre.capacite} pers.</span>
+            </div>
+            <div className="flex gap-4">
+              <button onClick={() => handleEdit(chambre)} className="text-sm text-gray-600">Modifier</button>
+              <button onClick={() => handleDelete(chambre.id)} className="text-sm text-red-600">Supprimer</button>
+            </div>
+          </div>
+        ))}
+        {chambres?.length === 0 && (
+          <div className="bg-white p-8 border border-gray-200 text-center text-gray-500">Aucune chambre</div>
+        )}
+      </div>
+
+      {/* Desktop table view */}
+      <div className="hidden sm:block bg-white border border-gray-200 overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
@@ -912,10 +1025,16 @@ function PaiementsTab() {
 // Main Admin Page
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
+  // Check authentication
   if (!isAuthenticated) {
-    return <AdminHeader />;
+    return <AccessDenied reason="not_authenticated" />;
+  }
+
+  // Check admin role
+  if (user?.role !== 'ADMIN') {
+    return <AccessDenied reason="not_admin" />;
   }
 
   const tabs: { id: TabId; label: string }[] = [
@@ -930,15 +1049,15 @@ export default function AdminPage() {
     <div className="min-h-screen bg-gray-50">
       <AdminHeader />
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Tabs */}
-        <div className="border-b border-gray-200 mb-8">
-          <nav className="flex gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        {/* Tabs - horizontal scroll on mobile */}
+        <div className="border-b border-gray-200 mb-6 sm:mb-8 overflow-x-auto">
+          <nav className="flex gap-4 sm:gap-8 min-w-max">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`pb-4 text-sm font-medium transition-colors ${
+                className={`pb-3 sm:pb-4 text-sm font-medium transition-colors whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'text-gray-900 border-b-2 border-gray-900'
                     : 'text-gray-500 hover:text-gray-700'

@@ -1,7 +1,15 @@
 package bookingengine.frameworks.config;
 
-import bookingengine.adapters.persistence.entities.*;
-import bookingengine.adapters.persistence.repositories.*;
+import bookingengine.adapters.persistence.entities.ChambreJpaEntity;
+import bookingengine.adapters.persistence.entities.PaymentJpaEntity;
+import bookingengine.adapters.persistence.entities.ReservationJpaEntity;
+import bookingengine.adapters.persistence.entities.SaisonJpaEntity;
+import bookingengine.adapters.persistence.entities.UtilisateurJpaEntity;
+import bookingengine.adapters.persistence.repositories.ChambreJpaRepository;
+import bookingengine.adapters.persistence.repositories.PaymentJpaRepository;
+import bookingengine.adapters.persistence.repositories.ReservationJpaRepository;
+import bookingengine.adapters.persistence.repositories.SaisonJpaRepository;
+import bookingengine.adapters.persistence.repositories.UtilisateurJpaRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;

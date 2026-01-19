@@ -2,18 +2,24 @@
 
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
-import { chambreApi, prixApi } from '@/lib/api';
-import { useApi } from '@/lib/hooks';
+import { useRouter } from 'next/navigation';
+import { chambreApi, prixApi, reservationApi } from '@/lib/api';
+import { useApi, useAuth } from '@/lib/hooks';
 import type { Chambre, ResultatCalculPrix } from '@/lib/types';
 
 function Header() {
+  const { user, isAuthenticated, logout } = useAuth();
+  const router = useRouter();
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
     <header className="absolute top-0 left-0 right-0 z-50">
-      <div className="max-w-7xl mx-auto px-6 py-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
         <div className="flex justify-between items-center">
           <Link href="/" className="text-xl font-light tracking-wide text-white">
             HOTEL & SPA
           </Link>
+          {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-8">
             <a href="#chambres" className="text-sm text-white/80 hover:text-white transition-colors">
               Nos Chambres
@@ -21,17 +27,89 @@ function Header() {
             <a href="#reservation" className="text-sm text-white/80 hover:text-white transition-colors">
               Reserver
             </a>
-            <Link href="/auth/connexion" className="text-sm text-white/80 hover:text-white transition-colors">
-              Connexion
-            </Link>
-            <Link
-              href="/auth/inscription"
-              className="text-sm px-4 py-2 border border-white/30 text-white hover:bg-white hover:text-gray-900 transition-colors"
-            >
-              Inscription
-            </Link>
+            {isAuthenticated ? (
+              <>
+                {user?.role === 'ADMIN' && (
+                  <Link href="/admin" className="text-sm text-white/80 hover:text-white transition-colors">
+                    Administration
+                  </Link>
+                )}
+                <Link href="/mon-compte" className="text-sm text-white/80 hover:text-white transition-colors">
+                  Mon compte
+                </Link>
+                <button
+                  onClick={() => { logout(); router.push('/'); }}
+                  className="text-sm px-4 py-2 border border-white/30 text-white hover:bg-white hover:text-gray-900 transition-colors"
+                >
+                  Deconnexion
+                </button>
+              </>
+            ) : (
+              <>
+                <Link href="/connexion" className="text-sm text-white/80 hover:text-white transition-colors">
+                  Connexion
+                </Link>
+                <Link
+                  href="/inscription"
+                  className="text-sm px-4 py-2 border border-white/30 text-white hover:bg-white hover:text-gray-900 transition-colors"
+                >
+                  Inscription
+                </Link>
+              </>
+            )}
           </nav>
+          {/* Mobile menu button */}
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="md:hidden p-2 text-white"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {menuOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
         </div>
+        {/* Mobile nav */}
+        {menuOpen && (
+          <nav className="md:hidden mt-4 pt-4 border-t border-white/20 flex flex-col gap-4">
+            <a href="#chambres" className="text-sm text-white/80 hover:text-white transition-colors">
+              Nos Chambres
+            </a>
+            <a href="#reservation" className="text-sm text-white/80 hover:text-white transition-colors">
+              Reserver
+            </a>
+            {isAuthenticated ? (
+              <>
+                {user?.role === 'ADMIN' && (
+                  <Link href="/admin" className="text-sm text-white/80 hover:text-white transition-colors">
+                    Administration
+                  </Link>
+                )}
+                <Link href="/mon-compte" className="text-sm text-white/80 hover:text-white transition-colors">
+                  Mon compte
+                </Link>
+                <button
+                  onClick={() => { logout(); router.push('/'); setMenuOpen(false); }}
+                  className="text-sm text-white/80 hover:text-white transition-colors text-left"
+                >
+                  Deconnexion
+                </button>
+              </>
+            ) : (
+              <>
+                <Link href="/connexion" className="text-sm text-white/80 hover:text-white transition-colors">
+                  Connexion
+                </Link>
+                <Link href="/inscription" className="text-sm text-white/80 hover:text-white transition-colors">
+                  Inscription
+                </Link>
+              </>
+            )}
+          </nav>
+        )}
       </div>
     </header>
   );
@@ -183,12 +261,16 @@ function RoomsSection() {
 
 function ReservationSection() {
   const { data: chambres } = useApi(useCallback(() => chambreApi.getAll(), []));
+  const { user, isAuthenticated } = useAuth();
+  const router = useRouter();
   const [dateDebut, setDateDebut] = useState('');
   const [dateFin, setDateFin] = useState('');
   const [chambreId, setChambreId] = useState('');
   const [resultat, setResultat] = useState<ResultatCalculPrix | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reservationLoading, setReservationLoading] = useState(false);
+  const [reservationSuccess, setReservationSuccess] = useState(false);
 
   const handleCalcul = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -212,7 +294,44 @@ function ReservationSection() {
     }
   };
 
-  const chambreSelectionnee = chambres?.find(c => c.id === Number(chambreId));
+  const handleReservation = async () => {
+    if (!dateDebut || !dateFin || !chambreId) return;
+
+    if (isAuthenticated && user?.id) {
+      // User is logged in - create reservation directly
+      setReservationLoading(true);
+      setError(null);
+      try {
+        await reservationApi.create({
+          chambreId: Number(chambreId),
+          utilisateurId: user.id,
+          dateDebut,
+          dateFin,
+        });
+        setReservationSuccess(true);
+        // Reset form after success
+        setTimeout(() => {
+          router.push('/mon-compte');
+        }, 2000);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Erreur lors de la reservation');
+      } finally {
+        setReservationLoading(false);
+      }
+    } else {
+      // User is not logged in - store pending reservation and redirect
+      const pendingReservation = {
+        chambreId: Number(chambreId),
+        dateDebut,
+        dateFin,
+        prixTotal: resultat?.prixTotal,
+        numeroChambre: resultat?.numeroChambre,
+        typeChambre: resultat?.typeChambre,
+      };
+      localStorage.setItem('pendingReservation', JSON.stringify(pendingReservation));
+      router.push('/connexion');
+    }
+  };
 
   return (
     <section id="reservation" className="py-24 px-6 bg-gray-50">
@@ -318,14 +437,30 @@ function ReservationSection() {
                 </div>
               )}
 
-              <div className="mt-6 flex justify-center">
-                <Link
-                  href={`/auth/inscription?redirect=/`}
-                  className="px-8 py-3 bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors"
-                >
-                  Reserver cette chambre
-                </Link>
-              </div>
+              {reservationSuccess ? (
+                <div className="mt-6 p-4 bg-green-50 text-green-700 text-center">
+                  <svg className="w-8 h-8 mx-auto mb-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <p className="font-medium">Reservation effectuee avec succes !</p>
+                  <p className="text-sm mt-1">Redirection vers votre compte...</p>
+                </div>
+              ) : (
+                <div className="mt-6 flex flex-col items-center gap-3">
+                  <button
+                    onClick={handleReservation}
+                    disabled={reservationLoading}
+                    className="px-8 py-3 bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 disabled:bg-gray-400 transition-colors"
+                  >
+                    {reservationLoading ? 'Reservation en cours...' : 'Reserver cette chambre'}
+                  </button>
+                  {!isAuthenticated && (
+                    <p className="text-sm text-gray-500">
+                      Vous serez redirige pour vous connecter
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
