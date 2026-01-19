@@ -15,8 +15,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping("api/auth")
-@Tag(name = "Authentification", description = "API de gestion de l'authentification et inscription des utilisateurs")
+@RequestMapping("auth")
+@Tag(name = "Authentification", description = "Gestion de l'authentification")
 public class AuthController {
 
     private final AuthUseCase authUseCase;

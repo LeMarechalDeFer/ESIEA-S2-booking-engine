@@ -16,8 +16,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("api/saisons")
-@Tag(name = "Saisons", description = "API de gestion des saisons tarifaires pour le calcul dynamique des prix")
+@RequestMapping("saisons")
+@Tag(name = "Saisons", description = "Gestion des saisons tarifaires")
 public class SaisonController {
 
     private final SaisonUseCase saisonUseCase;

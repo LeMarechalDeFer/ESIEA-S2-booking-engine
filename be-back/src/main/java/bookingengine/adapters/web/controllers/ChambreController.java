@@ -16,8 +16,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("api/chambres")
-@Tag(name = "Chambres", description = "API de gestion des chambres d'hôtel")
+@RequestMapping("chambres")
+@Tag(name = "Chambres", description = "Gestion des chambres")
 public class ChambreController {
 
     private final ChambreUseCase chambreUseCase;
