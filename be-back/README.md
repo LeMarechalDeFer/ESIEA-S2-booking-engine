@@ -17,26 +17,34 @@ git clone <url-du-repo>
 cd ESIEA-S2-booking-engine
 ```
 
-### 2. Lancer l'application
+### 2. Lancer l'application (Docker Compose)
 
 ```bash
-./mvnw spring-boot:run
+docker compose up --build
 ```
 
-Spring Boot lance automatiquement les conteneurs Docker (PostgreSQL et Kafka) grâce à `spring-boot-docker-compose`.
+Cela lance tous les services : PostgreSQL, Kafka, Backend, Frontend et Nginx (reverse proxy).
 
 ### 3. Accéder aux services
 
 | Service | URL |
 |---------|-----|
-| Front-end (Accueil) | http://localhost:8080 |
-| Gestion Saisons | http://localhost:8080/saisons |
-| Gestion Chambres | http://localhost:8080/chambres |
-| Calcul Prix | http://localhost:8080/prix |
-| Swagger UI | http://localhost:8080/swagger-ui.html |
-| OpenAPI JSON | http://localhost:8080/v3/api-docs |
+| Application | http://localhost |
+| API REST | http://localhost/api |
+| Swagger UI | http://localhost/swagger-ui.html |
+| OpenAPI JSON | http://localhost/v3/api-docs |
+| Kafka UI | http://localhost:8080 |
 
-### 4. Authentification
+### 4. Développement local (Backend seul)
+
+```bash
+cd be-back
+./mvnw spring-boot:run
+```
+
+Spring Boot lance automatiquement les conteneurs Docker (PostgreSQL et Kafka) grâce à `spring-boot-docker-compose`.
+
+### 5. Authentification
 
 Pour accéder aux endpoints protégés :
 - **Utilisateur** : `user`
@@ -44,7 +52,7 @@ Pour accéder aux endpoints protégés :
 
 Ou créer un compte via l'API :
 ```bash
-curl -X POST http://localhost:8080/api/auth/inscription \
+curl -X POST http://localhost/api/auth/inscription \
   -H "Content-Type: application/json" \
   -d '{"username":"monuser","password":"monpassword","email":"email@example.com"}'
 ```
@@ -61,6 +69,8 @@ src/main/java/bookingengine/
 │   │   ├── Chambre.java             # Chambre d'hôtel
 │   │   └── Utilisateur.java         # Utilisateur
 │   ├── repositories/                # Interfaces des repositories
+│   ├── ports/                       # Ports (EventPublisher, PasswordEncoder)
+│   ├── events/                      # Événements métier
 │   └── exceptions/                  # Exceptions métier
 │
 ├── usecase/                         # Couche Use Cases (Logique métier)
@@ -76,11 +86,38 @@ src/main/java/bookingengine/
 │   │   ├── mappers/                 # Mappers Domain <-> JPA
 │   │   └── *RepositoryImpl.java     # Implémentations
 │   └── web/                         # Adaptateurs Web
-│       ├── controllers/             # REST Controllers + Thymeleaf
+│       ├── controllers/             # REST Controllers
 │       └── dto/                     # Data Transfer Objects
 │
 └── frameworks/                      # Couche Frameworks
-    └── security/SecurityConfig.java # Configuration Spring Security
+    ├── config/                      # Configuration UseCases
+    ├── security/                    # Spring Security
+    └── kafka/                       # Configuration Kafka
+```
+
+## Architecture Docker
+
+```
+                    ┌─────────────────┐
+        :80         │     Nginx       │
+   ────────────────>│ (reverse proxy) │
+                    └────────┬────────┘
+                             │
+              ┌──────────────┴──────────────┐
+              │                             │
+              ▼                             ▼
+    ┌─────────────────┐           ┌─────────────────┐
+    │    Frontend     │           │    Backend      │
+    │   (Next.js)     │           │  (Spring Boot)  │
+    │    :3000        │           │    :8080        │
+    └─────────────────┘           └────────┬────────┘
+                                           │
+                          ┌────────────────┼────────────────┐
+                          ▼                ▼                ▼
+                   ┌───────────┐    ┌───────────┐    ┌───────────┐
+                   │ PostgreSQL│    │   Kafka   │    │ Kafka UI  │
+                   │   :5432   │    │   :9092   │    │   :8080   │
+                   └───────────┘    └───────────┘    └───────────┘
 ```
 
 ## Fonctionnalités
@@ -89,36 +126,33 @@ src/main/java/bookingengine/
 - Créer, lire, modifier, supprimer des saisons tarifaires
 - Chaque saison a un coefficient de prix (ex: 1.5 = +50% en haute saison)
 - **API** : `GET/POST/PUT/DELETE /api/saisons`
-- **Front** : http://localhost:8080/saisons
 
 ### 2. Gestion des Chambres (CRUD)
 - Créer, lire, modifier, supprimer des chambres
 - Types : SIMPLE, DOUBLE, SUITE, FAMILIALE
 - Gestion de la disponibilité
 - **API** : `GET/POST/PUT/DELETE /api/chambres`
-- **Front** : http://localhost:8080/chambres
 
 ### 3. Calcul de Prix
 - Calcule le prix total d'un séjour
 - Applique les coefficients saisonniers jour par jour
 - Retourne le détail du calcul
 - **API** : `POST /api/prix/calculer`
-- **Front** : http://localhost:8080/prix
 
 ### 4. Authentification
 - Inscription d'utilisateurs
-- Connexion via formulaire Spring Security
+- Connexion via Spring Security
 - **API** : `POST /api/auth/inscription`
 
 ## API REST (Swagger)
 
-Accéder à la documentation interactive : http://localhost:8080/swagger-ui.html
+Accéder à la documentation interactive : http://localhost/swagger-ui.html
 
 ### Exemples d'utilisation
 
 **Créer une saison :**
 ```bash
-curl -X POST http://localhost:8080/api/saisons \
+curl -X POST http://localhost/api/saisons \
   -H "Content-Type: application/json" \
   -d '{
     "nom": "Haute Saison",
@@ -130,7 +164,7 @@ curl -X POST http://localhost:8080/api/saisons \
 
 **Créer une chambre :**
 ```bash
-curl -X POST http://localhost:8080/api/chambres \
+curl -X POST http://localhost/api/chambres \
   -H "Content-Type: application/json" \
   -d '{
     "numero": "101",
@@ -144,7 +178,7 @@ curl -X POST http://localhost:8080/api/chambres \
 
 **Calculer le prix d'un séjour :**
 ```bash
-curl -X POST http://localhost:8080/api/prix/calculer \
+curl -X POST http://localhost/api/prix/calculer \
   -H "Content-Type: application/json" \
   -d '{
     "chambreId": 1,
@@ -155,43 +189,54 @@ curl -X POST http://localhost:8080/api/prix/calculer \
 
 ## Stack technique
 
-- **Framework** : Spring Boot 4.0.1
+- **Backend** : Spring Boot 4.0.1, Spring Data JPA, Spring Security
+- **Frontend** : Next.js 16, React 19, TypeScript, Tailwind CSS
 - **Base de données** : PostgreSQL
 - **Messaging** : Apache Kafka
+- **Reverse Proxy** : Nginx
 - **Documentation API** : Springdoc OpenAPI 3.0.1 (Swagger)
-- **Front-end** : Thymeleaf + Bootstrap 5
-- **Sécurité** : Spring Security
 - **Architecture** : Clean Architecture
 
 ## Docker Compose
 
 Les services sont définis dans `compose.yaml` :
 
-- **postgres** : Base de données PostgreSQL (port 5432)
-- **kafka** : Apache Kafka (port 9092)
+| Service | Port | Description |
+|---------|------|-------------|
+| nginx | 80 | Reverse proxy (point d'entrée) |
+| frontend | 3000 | Next.js (interne) |
+| backend | 8080 | Spring Boot API (interne) |
+| postgres | 5432 | Base de données |
+| kafka | 9092 | Message broker |
+| kafka-ui | 8080 | Interface Kafka |
 
 ### Commandes Docker
 
-**Lancer les conteneurs :**
+**Lancer tous les services :**
 ```bash
-docker compose up -d
+docker compose up --build
 ```
 
-**Arrêter les conteneurs :**
+**Lancer en arrière-plan :**
+```bash
+docker compose up -d --build
+```
+
+**Arrêter les services :**
 ```bash
 docker compose down
 ```
 
-**Reset complet de la base de données :**
+**Reset complet (supprime les données) :**
 ```bash
 docker compose down -v
-docker compose up -d
+docker compose up --build
 ```
-> L'option `-v` supprime les volumes Docker, ce qui efface toutes les données PostgreSQL.
 
 **Voir les logs :**
 ```bash
-docker compose logs -f postgres
+docker compose logs -f backend
+docker compose logs -f nginx
 ```
 
 ## Configuration
@@ -201,14 +246,21 @@ Le projet est **prêt à l'emploi** sans configuration supplémentaire :
 - **Base de données** : Créée automatiquement par Docker Compose
 - **Schéma SQL** : Généré automatiquement par Hibernate (`ddl-auto=update`)
 - **Tables de session** : Créées automatiquement (`initialize-schema=always`)
-- **Conteneurs Docker** : Lancés automatiquement par Spring Boot
 
 Aucun fichier `.env`, aucune variable d'environnement, aucune configuration manuelle requise.
 
 ## Tests
 
 ```bash
+cd be-back
 ./mvnw test
 ```
 
 Les tests utilisent Testcontainers pour créer des instances isolées de PostgreSQL et Kafka.
+
+### Couverture de code
+
+```bash
+./mvnw test
+# Rapport disponible dans target/site/jacoco/index.html
+```
